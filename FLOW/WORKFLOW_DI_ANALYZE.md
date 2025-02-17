@@ -1,175 +1,225 @@
 # 依存性分析ワークフロー
 
-## 1. YAMLファイル解析フェーズ
+## 概要
+dependency.yamlに記録された依存関係と実装コードを分析し、DIパターン適用のための詳細な分析レポートを生成するワークフローです。
 
-### 1.1 依存関係グラフの構築
+## メタデータ
+```yaml
+version: 1.0.0
+last_updated: 2024-03-21
+author: Cursor Agent
+status: draft
+```
+
+## 1. 依存関係の静的解析フェーズ
+
+### フェーズの流れ
 ```mermaid
-graph TD
-    A[YAMLファイル読み込み] --> B[依存グラフ構築]
-    B --> C[直接依存の分析]
-    B --> D[間接依存の分析]
-    B --> E[循環依存の検出]
+sequenceDiagram
+    participant Agent as Cursor Agent
+    participant DY as dependency.yaml
+    participant SC as Source Code
+    participant Report as analysis_report.yaml
+
+    Note over Agent: フェーズ開始
+
+    rect rgba(65, 105, 225, 0.2)
+        Note over Agent: 1. 初期依存関係の読み込み
+        Agent->>DY: YAMLファイルの解析
+        DY-->>Agent: 依存関係データ
+    end
+
+    rect rgba(60, 179, 113, 0.2)
+        Note over Agent: 2. ソースコード検証
+        Agent->>SC: 依存コンポーネントの実装確認
+        SC-->>Agent: 実装詳細
+        Agent->>Agent: 依存関係の実態確認
+    end
+
+    rect rgba(218, 112, 214, 0.2)
+        Note over Agent: 3. 依存グラフの構築と検証
+        Agent->>Agent: 依存グラフの構築
+        Agent->>SC: グラフの妥当性確認
+        SC-->>Agent: 検証結果
+    end
+
+    rect rgba(255, 152, 0, 0.2)
+        Note over Agent: 4. メトリクス計算
+        Agent->>Report: 分析結果の記録
+        Report-->>Agent: 記録確認
+    end
+
+    Note over Agent: フェーズ完了
 ```
 
-### 1.2 解析出力形式
+### 入力
+- dependency.yaml（依存関係定義）
+- プロジェクトのソースコード
+
+### 1. 初期依存関係の読み込み
+1. dependency.yamlの解析
+   ```yaml
+   analysis_steps:
+     - load_yaml_file:
+         path: "dependency.yaml"
+         validation:
+           - check_file_exists
+           - validate_yaml_syntax
+     
+     - construct_dependency_graph:
+         node_types:
+           - CONTROLLER
+           - SERVICE
+           - MODEL
+           - POLICY
+         edge_types:
+           - DIRECT
+           - INDIRECT
+           - CIRCULAR
+   ```
+
+2. 依存グラフの構築
+   ```yaml
+   graph_construction:
+     nodes:
+       - extract_components
+       - assign_component_types
+     edges:
+       - map_direct_dependencies
+       - calculate_indirect_dependencies
+       - detect_circular_dependencies
+   ```
+
+### 2. ソースコード検証
 ```yaml
-dependency_graph:
-  nodes:
-    - id: "app/Http/Controllers/TodoController.php"
-      type: "CONTROLLER"
-      dependencies:
-        direct:
-          - "app/Services/TodoService.php"
-          - "app/Models/Todo.php"
-        indirect:
-          - "app/Models/User.php"
-        circular:
-          - "app/Models/Tag.php"
+source_code_verification:
+  steps:
+    - for_each_dependency:
+        action: "依存先コンポーネントの実装コードを確認"
+        verify:
+          - import_statements: "use文の確認"
+          - actual_usage: "実際の使用箇所の特定"
+          - dependency_type: "依存の種類の判別"
+            types:
+              - "クラス継承"
+              - "インターフェース実装"
+              - "メソッド呼び出し"
+              - "プロパティ参照"
+
+    - validate_dependencies:
+        action: "dependency.yamlとの整合性確認"
+        checks:
+          - missing_dependencies: "YAMLに記載されていない依存の検出"
+          - unused_dependencies: "記載されているが未使用の依存の検出"
+          - implicit_dependencies: "間接的な依存関係の検出"
+
+    - dependency_context:
+        action: "依存関係の文脈を理解"
+        analyze:
+          - scope: "依存の影響範囲"
+          - lifecycle: "オブジェクトのライフサイクル"
+          - coupling_type: "結合度の種類"
 ```
 
-## 2. メトリクス計算フェーズ
-
-### 2.1 結合度の計算
+### 3. 依存グラフの構築と検証
 ```yaml
-coupling_metrics:
-  calculation_rules:
-    direct_dependency_weight: 1.0
-    indirect_dependency_weight: 0.5
-    circular_dependency_weight: 2.0
-    
-  thresholds:
-    high: 0.7
-    medium: 0.4
-    low: 0.0
+graph_construction_and_validation:
+  steps:
+    - build_initial_graph:
+        source: "dependency.yaml"
+        
+    - verify_with_source:
+        action: "ソースコードとの整合性確認"
+        checks:
+          - actual_dependencies: "実装上の依存関係"
+          - dependency_direction: "依存の方向性"
+          - dependency_strength: "依存の強さ"
+        
+    - update_graph:
+        action: "検証結果に基づくグラフの更新"
+        updates:
+          - add_missing_edges: "未記載の依存を追加"
+          - update_edge_weights: "依存の強さを反映"
+          - mark_implicit_deps: "暗黙の依存を記録"
 ```
 
-### 2.2 凝集度の評価
+### 成果物
 ```yaml
-cohesion_metrics:
-  evaluation_points:
-    - responsibility_focus
-    - internal_dependencies
-    - layer_appropriate_dependencies
-  
-  scoring:
-    responsibility_focus:
-      single_responsibility: 1.0
-      mixed_responsibilities: 0.5
-    internal_dependencies:
-      well_encapsulated: 1.0
-      leaked_implementation: 0.5
-```
-
-## 3. 特性分析フェーズ
-
-### 3.1 コード特性の検出
-```yaml
-code_characteristics:
-  patterns:
-    global_state:
-      - pattern: "use.*Facade"
-      - pattern: "static::"
-    singleton:
-      - pattern: "getInstance()"
-    static_methods:
-      - pattern: "static function"
-    external_services:
-      - pattern: "inject.*Service"
-```
-
-### 3.2 レイヤー分析
-```yaml
-layer_analysis:
-  rules:
-    controller:
-      allowed_dependencies:
-        - "Services"
-        - "Models"
-        - "Policies"
-      forbidden_dependencies:
-        - "Controllers"
-        - "Repositories"
-    service:
-      allowed_dependencies:
-        - "Models"
-        - "Repositories"
-```
-
-## 4. 出力生成フェーズ
-
-### 4.1 分析結果の統合
-```yaml
-analysis_result:
-  component_analysis:
-    app/Http/Controllers/TodoController.php:
-      metrics:
-        coupling:
-          score: 0.85
-          level: "HIGH"
-          direct_dependencies: 4
-          indirect_dependencies: 7
-          circular_dependencies: true
-        cohesion:
-          score: 0.6
-          responsibility_focus: 0.7
-      
-      characteristics:
-        global_state: false
-        singleton_usage: false
-        static_methods: true
-        external_services: true
-        parameter_complexity: "MEDIUM"
-      
-      layer_info:
-        type: "CONTROLLER"
-        violations:
-          - "直接的なリポジトリアクセス"
-```
-
-### 4.2 リファクタリング候補の提案
-```yaml
-refactoring_candidates:
-  primary:
-    pattern: "インターフェース抽出"
-    reason: "外部サービスへの依存が多く、テスト容易性の向上が必要"
-  secondary:
-    - pattern: "静的メソッド公開"
-      reason: "静的メソッドの依存があり、テスト性の改善が必要"
-```
-
-## 5. 検証フェーズ
-
-### 5.1 分析結果の検証
-- メトリクス計算の正確性確認
-- 特性検出の精度確認
-- レイヤー違反の確認
-
-### 5.2 出力データの整合性チェック
-```yaml
-validation_rules:
+dependency_analysis_report:
+  component_id: "app/Http/Controllers/TodoController.php"
   metrics:
-    - coupling_score_range: [0.0, 1.0]
-    - cohesion_score_range: [0.0, 1.0]
+    coupling:
+      score: 0.85
+      level: "HIGH"
+      direct_dependencies: 4
+      indirect_dependencies: 7
+      circular_dependencies: true
+    cohesion:
+      score: 0.6
+      responsibility_focus: 0.7
+  
   characteristics:
-    - required_fields: ["global_state", "static_methods"]
-    - boolean_values: ["global_state", "singleton_usage"]
+    global_state: false
+    singleton_usage: false
+    static_methods: true
+    external_services: true
+    parameter_complexity: "MEDIUM"
+  
   layer_info:
-    - valid_types: ["CONTROLLER", "SERVICE", "MODEL"]
+    type: "CONTROLLER"
+    violations:
+      - "直接的なリポジトリアクセス"
 ```
 
-## 6. 次フェーズへの連携
+## 2. パターン評価への移行
 
-### 6.1 WORKFLOW_EVALUATE_DIへの入力準備
+### 2.1 分析結果の受け渡し
 ```yaml
-evaluate_workflow_input:
-  coupling_level: "HIGH"
-  global_state: false
-  implementation_complexity: "MEDIUM"
-  test_requirements: "HIGH"
+handover:
+  workflow: "WORKFLOW_DI_EVALUATE.md"
+  input_data:
+    source: "dependency_analysis_report"
+    format: "analysis_input"  # WORKFLOW_DI_EVALUATEの入力形式に合わせる
 ```
 
-### 6.2 分析結果のドキュメント化
-- メトリクス概要
-- 検出された問題点
-- 推奨される改善パターン
-- レイヤー違反の詳細
+### 2.2 移行の判断基準
+- 依存関係の分析が完了していること
+- メトリクスが正しく計算されていること
+- 特性分析が完了していること
+- レイヤー情報が特定されていること
+
+## 完了条件
+1. 依存関係の分析レポートが生成されていること
+2. WORKFLOW_DI_EVALUATEへの入力データが準備されていること
+3. すべての重要な依存関係が分析されていること
+
+## エラー処理
+1. 入力ファイルの問題
+   ```yaml
+   error_handling:
+     file_not_found:
+       action: "エラーを報告し、処理を中断"
+       message: "依存関係ファイルが見つかりません: {file_path}"
+     
+     invalid_yaml:
+       action: "構文エラーの箇所を特定して報告"
+       message: "YAMLの構文エラー: {error_details}"
+   ```
+
+2. 分析エラー
+   ```yaml
+   analysis_errors:
+     circular_dependency:
+       action: "警告を記録し、分析を継続"
+       severity: "WARNING"
+     
+     invalid_pattern:
+       action: "エラーを記録し、代替パターンを探索"
+       severity: "ERROR"
+   ```
+
+## 注意事項
+- 依存関係の分析は必ず依存性グラフの構築から開始すること
+- コード構造の分析は実装の詳細に踏み込んで行うこと
+- パターン推奨は具体的な根拠とともに提示すること
+- セキュリティとパフォーマンスの考慮を含めること
